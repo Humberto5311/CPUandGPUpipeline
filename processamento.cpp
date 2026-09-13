@@ -1,6 +1,6 @@
 #include "processamento.h"
 #include <iostream>
-#include <CL/cl.h> // Cabeçalho padrão do OpenCL
+#include <CL/cl.h> 
 
 static cl_platform_id plataforma;
 static cl_device_id dispositivo_escolhido;
@@ -43,7 +43,7 @@ bool inicializarOpenCLComercial() {
 
     erro = clGetPlatformIDs(4, plataformas, &numPlataformas);
     if (erro != CL_SUCCESS || numPlataformas == 0) {
-        std::cerr << "[PRODUTO ERRO] Nenhum driver OpenCL instalado no PC do cliente." << std::endl;
+        std::cerr << "[ERROR] Nenhum driver OpenCL instalado no PC do cliente." << std::endl;
         return false;
     }
 
@@ -99,7 +99,7 @@ void limparOpenCL() {
     if (contexto) clReleaseContext(contexto);
 }
 
-// Interface binária C para exportação via DLL/SO
+
 extern "C" {
     __declspec(dllexport) bool ligarMotorGrafico() {
         return inicializarOpenCLComercial();
