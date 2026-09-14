@@ -1,15 +1,13 @@
-# 🚀 Pipeline de Alto Desempenho
+High-Performance Pipeline
+A high-performance asynchronous pipeline designed for game engines, focused on enhancing parallel processing between the GPU and CPU.
 
-Um pipeline assíncrono de alta performance desenvolvido para engines de jogos, focado em otimizar o processamento paralelo entre GPU e CPU.
+ Technologies Used
+Modern C++ (Advanced use of threads and lock-free atomic operations)
+OpenCL (Hardware-accelerated computing for adaptive Ray Tracing)
 
-## 🛠️ Tecnologias Utilizadas
-* **C++ Moderno** (Uso avançado de threads e operações atômicas lock-free)
-* **OpenCL** (Computação acelerada por hardware para Ray Tracing adaptativo)
+ Features
+Producer-Consumer Architecture: Dedicated CPU threads calculate geometry in parallel with rendering.
+Smart Fallback: Automatic hardware detection (runs on Nvidia/AMD/Intel GPUs or activates high-performance CPU mode).
+Safe Memory Management: Fast batch data transfer to VRAM/RAM without memory leaks.
 
-## 📌 Funcionalidades
-* **Arquitetura Produtor-Consumidor:** Threads dedicadas na CPU calculam a geometria em paralelo com a renderização.
-* **Fallback Inteligente:** Detecção automática de hardware (roda em GPUs Nvidia/AMD/Intel ou ativa o modo CPU de alto desempenho).
-* **Memory Management Seguro:** Transferência rápida de dados em lote para a VRAM/RAM sem vazamentos de memória.
-
----
-⚖️ Licenciado sob a **Mozilla Public License 2.0** por **NEXCore (2026)**.
+ Licensed under the Mozilla Public License 2.0 by NEXCore (2026).
