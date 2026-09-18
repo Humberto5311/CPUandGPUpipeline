@@ -12,7 +12,7 @@ Safe Memory Management: Fast batch data transfer to VRAM/RAM without memory leak
 
  Licensed under the Mozilla Public License 2.0 by NEXCore (2026).
 
- ## Isenção de Responsabilidade / Disclaimer
+## Disclaimer
 
-Este software é fornecido "no estado em que se encontra" (As-Is), sem garantias de qualquer tipo, expressas ou implícitas. O autor não se responsabiliza por quaisquer danos, perdas de dados ou falhas de hardware decorrentes do uso deste código. O uso é de total responsabilidade do usuário.
+This software is provided "as is", without warranty of any kind, express or implied. In no event shall the author be liable for any claim, damages, data loss, or hardware failure arising from the use of this code. The use of this software is at your own risk.
 
