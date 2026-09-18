@@ -11,3 +11,8 @@ Smart Fallback: Automatic hardware detection (runs on Nvidia/AMD/Intel GPUs or a
 Safe Memory Management: Fast batch data transfer to VRAM/RAM without memory leaks.
 
  Licensed under the Mozilla Public License 2.0 by NEXCore (2026).
+
+ ## Isenção de Responsabilidade / Disclaimer
+
+Este software é fornecido "no estado em que se encontra" (As-Is), sem garantias de qualquer tipo, expressas ou implícitas. O autor não se responsabiliza por quaisquer danos, perdas de dados ou falhas de hardware decorrentes do uso deste código. O uso é de total responsabilidade do usuário.
+
