@@ -16,3 +16,11 @@ Safe Memory Management: Fast batch data transfer to VRAM/RAM without memory leak
 
 This software is provided "as is", without warranty of any kind, express or implied. In no event shall the author be liable for any claim, damages, data loss, or hardware failure arising from the use of this code. The use of this software is at your own risk.
 
+## Partnerships and Commercial Licensing
+
+If your company wishes to integrate this pipeline into a proprietary product without the obligation to open-source your modifications under the MPL 2.0 license, please contact the author to negotiate a private commercial license (Dual Licensing).
+
+## How to Cite This Project
+
+If you use this CPU/GPU pipeline in academic research, articles, or derivative projects, please attribute credit by citing this repository:
+`Humberto5311 - CPU and GPU Pipeline (GitHub)`
