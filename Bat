@@ -1,9 +1,53 @@
-@echo off
-echo Compilando o motor grafico para DLL...
-g++ -O3 -shared -o motor_grafico.dll processamento.cpp -lOpenCL
-if %errorlevel% equ 0 (
-    echo ✅ DLL gerada com sucesso!
-) else (
-    echo ❌ Erro na compilacao. Verifique se o g++ e o SDK do OpenCL estao instalados.
-)
-pause
+# Gera a .so (Linux) e a .dll + .exe (Windows) automaticamente no GitHub.
+# Baixe os arquivos na aba Actions > (execucao) > Artifacts.
+name: Build
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar dependencias
+        run: sudo apt-get update && sudo apt-get install -y g++ make ocl-icd-opencl-dev opencl-headers
+      - name: Compilar e testar
+        run: make all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-so
+          path: libmotor_grafico.so
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-opencl-headers
+            mingw-w64-x86_64-opencl-icd
+            make
+      - name: Compilar a DLL e testar
+        shell: msys2 {0}
+        run: make all
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Gerar o .exe
+        shell: bash
+        run: |
+          pip install pyinstaller
+          pyinstaller --onefile --name CPUandGPUpipeline --add-binary "motor_grafico.dll;." main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-dll-exe
+          path: |
+            motor_grafico.dll
+            dist/CPUandGPUpipeline.exe
