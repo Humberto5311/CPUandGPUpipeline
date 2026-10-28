@@ -3,7 +3,7 @@
 O projeto usa **OpenCL**. Ele funciona se o PC tiver um driver OpenCL instalado.
 Sem driver, o programa avisa "Nenhum driver OpenCL instalado" e nao trava.
 
-> Baixe drivers **somente nos sites oficiais** e peca para um adulto acompanhar a instalacao.
+> Baixe drivers **somente nos sites oficiais** .
 > Nunca baixe "driver" de link de comentario, anuncio ou site desconhecido.
 
 ## Drivers de video (ja trazem OpenCL)
