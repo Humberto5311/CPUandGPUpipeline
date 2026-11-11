@@ -1,79 +1,138 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+import argparse
 import ctypes
 import platform
 import sys
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent
+MAX_ELEMENTS = 10_000_000
 
 
-def versao():
-    arquivo = RAIZ / "VERSION"
-    return arquivo.read_text().strip() if arquivo.exists() else "dev"
-
-
-def nome_biblioteca():
-    sistema = platform.system()
-    if sistema == "Windows":
+def library_name():
+    system = platform.system()
+    if system == "Windows":
         return "motor_grafico.dll"
-    if sistema == "Darwin":
+    if system == "Darwin":
         return "libmotor_grafico.dylib"
     return "libmotor_grafico.so"
 
 
-def inicializar_motor_grafico():
-    caminho = RAIZ / nome_biblioteca()
-    if not caminho.exists():
-        print(f"\n[AVISO] Arquivo binario nao encontrado: {caminho}")
-        print("        Compile antes com 'make' (Linux/macOS) ou build.bat (Windows).")
-        return None
+def load_engine():
+    path = ROOT / library_name()
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"Biblioteca nao encontrada: {path.name}. Compile primeiro com make ou build.bat."
+        )
+    lib = ctypes.CDLL(str(path))
+    float_ptr = ctypes.POINTER(ctypes.c_float)
+    lib.ligarMotorGrafico.argtypes = []
+    lib.ligarMotorGrafico.restype = ctypes.c_bool
+    lib.processarGeometria.argtypes = [float_ptr, ctypes.c_size_t, float_ptr, ctypes.c_float]
+    lib.processarGeometria.restype = ctypes.c_int
+    lib.submeterGeometria.argtypes = [float_ptr, ctypes.c_size_t, ctypes.c_float]
+    lib.submeterGeometria.restype = ctypes.c_uint64
+    lib.coletarGeometria.argtypes = [ctypes.c_uint64, float_ptr, ctypes.c_size_t,
+                                     ctypes.POINTER(ctypes.c_size_t), ctypes.c_int]
+    lib.coletarGeometria.restype = ctypes.c_int
+    lib.obterBackend.argtypes = []
+    lib.obterBackend.restype = ctypes.c_char_p
+    lib.obterVersao.argtypes = []
+    lib.obterVersao.restype = ctypes.c_char_p
+    lib.desligarMotorGrafico.argtypes = []
+    lib.desligarMotorGrafico.restype = None
+    return lib
 
-    try:
-        motor = ctypes.CDLL(str(caminho))
-    except OSError as e:
-        print(f"\n[ERRO] Nao foi possivel carregar a biblioteca do motor grafico: {e}")
-        return None
 
-    motor.ligarMotorGrafico.argtypes = []
-    motor.ligarMotorGrafico.restype = ctypes.c_bool
-    motor.enviarGeometria.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
-    motor.enviarGeometria.restype = None
-    motor.desligarMotorGrafico.argtypes = []
-    motor.desligarMotorGrafico.restype = None
-    return motor
+class PipelineSession:
+    """Sessao persistente com submissao assincrona e coleta por ID."""
+
+    def __init__(self):
+        self.lib = load_engine()
+        if not self.lib.ligarMotorGrafico():
+            raise RuntimeError("Nao foi possivel iniciar a pipeline.")
+        self.pending = {}
+
+    def submit(self, values, scale):
+        if not values or len(values) > MAX_ELEMENTS:
+            raise ValueError(f"Informe entre 1 e {MAX_ELEMENTS} valores.")
+        input_array = (ctypes.c_float * len(values))(*values)
+        task_id = self.lib.submeterGeometria(input_array, len(values), scale)
+        if not task_id:
+            raise RuntimeError("Falha ao submeter tarefa.")
+        self.pending[task_id] = len(values)
+        return task_id
+
+    def collect(self, task_id, timeout_ms=30000):
+        if task_id not in self.pending:
+            raise ValueError("ID de tarefa desconhecido ou ja coletado.")
+        count = self.pending[task_id]
+        output_array = (ctypes.c_float * count)()
+        output_size = ctypes.c_size_t()
+        status = self.lib.coletarGeometria(
+            task_id, output_array, count, ctypes.byref(output_size), timeout_ms
+        )
+        if status != 0:
+            if status != -4:
+                self.pending.pop(task_id, None)
+            raise RuntimeError(f"Falha ao coletar tarefa (codigo {status}).")
+        self.pending.pop(task_id, None)
+        return list(output_array[:output_size.value])
+
+    def backend(self):
+        return self.lib.obterBackend().decode("utf-8", errors="replace")
+
+    def version(self):
+        return self.lib.obterVersao().decode("utf-8", errors="replace")
+
+    def close(self):
+        if self.lib is not None:
+            # Consome resultados ainda pendentes para nao deixar a capacidade
+            # limitada da sessao ocupada ao reutilizar a biblioteca.
+            for task_id in list(self.pending):
+                try:
+                    self.collect(task_id)
+                except (RuntimeError, ValueError):
+                    self.pending.pop(task_id, None)
+            self.lib.desligarMotorGrafico()
+            self.lib = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
 
-def run_pipeline():
-    print("\n" + "=" * 50)
-    print(f"   CPU and GPU Pipeline v{versao()}")
-    print("=" * 50)
-    print(f"-> Sistema detectado: {platform.system()}")
+def run(values, scale):
+    with PipelineSession() as session:
+        task_id = session.submit(values, scale)
+        result = session.collect(task_id)
+        return session.version(), session.backend(), result
 
-    motor = inicializar_motor_grafico()
-    if motor is None:
-        return 1
 
-    if not motor.ligarMotorGrafico():
-        print("\n[ERRO] O pipeline nao pode ser ativado: nenhum hardware OpenCL disponivel.")
-        return 1
-
-    try:
-        dados_python = [0.0, 1.0, -5.0, 2.0, 1.5, -3.0]
-        dados_para_c = (ctypes.c_float * len(dados_python))(*dados_python)
-        motor.enviarGeometria(dados_para_c, len(dados_python))
-    finally:
-        motor.desligarMotorGrafico()
-
-    print("\n[OK] Pipeline executado com sucesso.")
-    print("=" * 50 + "\n")
+def main():
+    parser = argparse.ArgumentParser(description="Teste da pipeline CPU/GPU")
+    parser.add_argument("--scale", type=float, default=2.0, help="Fator aplicado a cada valor")
+    parser.add_argument("values", nargs="*", type=float,
+                        help="Valores de entrada (padrao: 1 2 3 4 5 6)")
+    args = parser.parse_args()
+    values = args.values or [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    version, backend, result = run(values, args.scale)
+    print(f"CPUandGPUpipeline v{version}")
+    print(f"Backend: {backend}")
+    print(f"Entrada: {values}")
+    print(f"Escala:  {args.scale}")
+    print(f"Saida:   {result}")
     return 0
 
 
 if __name__ == "__main__":
     try:
-        sys.exit(run_pipeline())
-    except KeyboardInterrupt:
-        print("\n\nProcesso interrompido.")
-        sys.exit(130)
+        sys.exit(main())
+    except (OSError, ValueError, RuntimeError) as exc:
+        print(f"[ERRO] {exc}", file=sys.stderr)
+        sys.exit(1)
