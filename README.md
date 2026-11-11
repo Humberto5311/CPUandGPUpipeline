@@ -24,3 +24,6 @@ If your company wishes to integrate this pipeline into a proprietary product wit
 
 If you use this CPU/GPU pipeline in academic research, articles, or derivative projects, please attribute credit by citing this repository:
 `Humberto5311 - CPU and GPU Pipeline (GitHub)`
+
+
+Nao deu para terminar de atualizar todos arquivos para o meu github entao baixem da relese de preferencia nova em zip com o nome GPUandGPUpipeline versao taltal .zip
