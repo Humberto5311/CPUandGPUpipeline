@@ -1,47 +1,55 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-#
-# Uso:  make          -> compila a biblioteca e roda o teste da fila
-#       make lib      -> so a biblioteca (.so / .dll / .dylib)
-#       make test     -> so o teste
-#       make clean    -> apaga o que foi gerado
 
-CXX      ?= g++
-CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra
-CLINC    ?=
+VERSION := $(shell cat VERSION 2>/dev/null || echo 0.0.0-dev)
+CXX ?= g++
+CXXFLAGS ?= -O2 -std=c++17 -Wall -Wextra -Wpedantic -fPIC
+CXXFLAGS += -DAPP_VERSION=\"$(VERSION)\" -DPIPELINE_BUILD
 
-ifeq ($(OS),Windows_NT)
-  LIB      := motor_grafico.dll
-  TEST     := test_fila.exe
-  LIBFLAGS := -shared -static-libgcc -static-libstdc++
-  OPENCL   := -lOpenCL
-else ifeq ($(shell uname -s),Darwin)
-  LIB      := libmotor_grafico.dylib
-  TEST     := test_fila
-  LIBFLAGS := -dynamiclib
-  OPENCL   := -framework OpenCL
+UNAME_S := $(shell uname -s 2>/dev/null)
+OPENCL_AVAILABLE := $(shell pkg-config --exists OpenCL 2>/dev/null && echo yes)
+ifeq ($(OPENCL_AVAILABLE),yes)
+  CXXFLAGS += -DPIPELINE_WITH_OPENCL $(shell pkg-config --cflags OpenCL)
+  OPENCL_LIBS := $(shell pkg-config --libs OpenCL)
 else
-  LIB      := libmotor_grafico.so
-  TEST     := test_fila
-  LIBFLAGS := -shared -fPIC
-  OPENCL   := -lOpenCL
+  OPENCL_LIBS :=
 endif
 
-all: lib test
+ifeq ($(UNAME_S),Darwin)
+  TARGET := libmotor_grafico.dylib
+  SHARED := -dynamiclib
+  ifeq ($(OPENCL_AVAILABLE),yes)
+    OPENCL_LIBS := -framework OpenCL
+  endif
+else ifeq ($(OS),Windows_NT)
+  TARGET := motor_grafico.dll
+  SHARED := -shared
+else
+  TARGET := libmotor_grafico.so
+  SHARED := -shared
+endif
 
-lib: $(LIB)
+.PHONY: all clean test check-license info
+all: $(TARGET)
 
-$(LIB): processamento.cpp processamento.h
-	$(CXX) $(CXXFLAGS) $(CLINC) $(LIBFLAGS) processamento.cpp -o $@ $(OPENCL)
+$(TARGET): processamento.cpp processamento.h VERSION
+	$(CXX) $(CXXFLAGS) $(SHARED) -o $@ processamento.cpp $(OPENCL_LIBS) -pthread
 
-test: $(TEST)
-	./$(TEST)
+info:
+	@echo "Versao: $(VERSION)"
+	@echo "OpenCL: $(if $(filter yes,$(OPENCL_AVAILABLE)),habilitado,nao encontrado - fallback CPU)"
 
-$(TEST): test_fila.cpp processamento.h
-	$(CXX) $(CXXFLAGS) -pthread test_fila.cpp -o $@
+check-license:
+	@missing=$$(find . \( -name '*.cpp' -o -name '*.h' -o -name '*.py' \) -not -path './.git/*' -exec grep -L "Mozilla Public" {} +); \
+	if [ -n "$$missing" ]; then echo "Arquivos sem cabecalho MPL:"; echo "$$missing"; exit 1; fi
+	@echo "OK: cabecalhos MPL encontrados."
+
+test: all
+	python3 -m unittest -v test_pipeline.py
+	$(CXX) $(CXXFLAGS) -o test_spsc test_spsc.cpp -pthread
+	./test_spsc
+	rm -f test_spsc
 
 clean:
-	rm -f $(LIB) $(TEST)
-
-.PHONY: all lib test clean
+	rm -f libmotor_grafico.so libmotor_grafico.dylib motor_grafico.dll test_spsc
