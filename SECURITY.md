@@ -2,20 +2,37 @@
 
 ## Versões Suportadas / Supported Versions
 
-Atualmente, apenas a versão principal do projeto recebe atualizações e correções:
-
-| Versão / Version | Suportado / Supported |
+| Versão / Version | Suportada / Supported |
 | ---------------- | --------------------- |
-| main             |  (Sim / Yes)          |
+| 2.0.x            | Sim / Yes             |
+| < 2.0            | Não / No              |
+
+## Escopo / Scope
+
+Relatos relevantes incluem: corrupção de memória, data races nas filas
+produtor-consumidor, acessos fora dos limites em kernels OpenCL, falhas na
+transferência de dados CPU/GPU e carregamento inseguro da biblioteca dinâmica.
+
+In scope: memory corruption, data races in the producer-consumer queues,
+out-of-bounds access in OpenCL kernels, CPU/GPU transfer flaws and unsafe
+loading of the dynamic library.
 
 ## Como relatar uma vulnerabilidade / Reporting a Vulnerability
 
-Se você encontrar alguma falha de segurança grave ou bug neste pipeline de CPU/GPU, **por favor, não publique isso abertamente nas Issues**.
+**Não abra uma Issue pública.** Use a aba **Security → Report a vulnerability**
+deste repositório (relatório privado do GitHub).
 
-Envie uma mensagem direta ou abra um relatório privado de segurança diretamente aqui no GitHub para que eu possa corrigir o problema de forma segura.
+**Please do not open a public Issue.** Use **Security → Report a vulnerability**
+on this repository (GitHub private vulnerability reporting).
 
----
+Inclua / Please include: versão afetada, passos para reproduzir, sistema
+operacional, hardware/driver (Nvidia/AMD/Intel) e impacto estimado.
 
-If you find any security vulnerability or major bug in this CPU/GPU pipeline, **please do not open a public Issue**. 
+## Prazos / Timeline
 
-Please report it privately through GitHub's security advisories tab so I can fix it securely.
+- Confirmação / Acknowledgement: até 7 dias / within 7 days
+- Plano de correção / Fix plan: até 30 dias / within 30 days
+
+Daremos crédito a quem reportar, se desejar, e pedimos que a divulgação pública
+ocorra somente após a correção. / Reporters will be credited if they wish, and we
+ask that public disclosure happens only after a fix is released.
